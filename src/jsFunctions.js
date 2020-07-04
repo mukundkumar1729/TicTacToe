@@ -1,14 +1,19 @@
 let user = '0';
 const gridCounter = 3;
+let winStatus = false;
 HtmlForTicTacToe();
 
 function HtmlForTicTacToe(counter){
     let html = "";
+    const width = screen.width;
     const rowColCounter = (counter==undefined) ? gridCounter : counter;
     for(var row = 1; row <= rowColCounter; row++){
-        html += '<div class="row">'
+        html += '<div class="row">';
+        if(width < 350){
+            html += '<div class="col-1"></div>';
+        }
         for(var col = 1; col <= rowColCounter; col++){
-            html += `<div class="col-md-4 col-4" onclick='SelectGridCell(${row},${col})' style="border:dotted;border-radius: 10px;margin-top: 10px;margin-bottom: 10px;">
+            html += `<div class="col-md-4 col-3" onclick='SelectGridCell(${row},${col})' style="border:dotted;border-radius: 10px;margin-top: 10px;margin-bottom: 10px;">
                             <label id= 'lbl${row}${col}'>?</label>
                         </div>`;
         }
@@ -44,39 +49,48 @@ function CheckWinner(){
             cellVal = cell.textContent;
             gridCellsValues.push(cellVal);
     }
-
+    let gcv = gridCellsValues;
     debugger;
     // Checking horizontal row first
     for(let i = 1 ; i <= gridCounter; i++){
-    if(gridCellsValues[i-1] == gridCellsValues[i+(1*gridCounter) -1] && gridCellsValues[i+(1*gridCounter) -1] == gridCellsValues[i+ (2*gridCounter) -1]){
-        FlagWinner(gridCellsValues[i-1]);
+    let gcv = gridCellsValues;
+    if(gcv[i-1] != '?' && gcv[i-1] == gcv[i+(1*gridCounter) -1] && gcv[i+(1*gridCounter) -1] == gcv[i+ (2*gridCounter) -1]){
+        FlagWinner(gcv[i-1]);
        }
 }
 
 debugger;
     // Checking vertical rows
     for(let j = 1 ; j <= (gridCounter * gridCounter); j= j+gridCounter){
-        if(gridCellsValues[j-1] == gridCellsValues[j] && gridCellsValues[j] == gridCellsValues[j+1]){
-            FlagWinner(gridCellsValues[j]);
+        if(gcv[j-1] != '?' && gcv[j-1] == gcv[j] && gcv[j] == gcv[j+1]){
+            FlagWinner(gcv[j]);
     }
 }
 
 debugger;
     //Checking diagonally
-    if(gridCellsValues[0] == gridCellsValues[4] && gridCellsValues[4] == gridCellsValues[8]){
-        FlagWinner(gridCellsValues[0]);
+    if(gcv[0] != '?' && gcv[0] == gcv[4] && gcv[4] == gcv[8]){
+        FlagWinner(gcv[0]);
     }
-    if(gridCellsValues[2] == gridCellsValues[4] && gridCellsValues[4] == gridCellsValues[6]){
-        FlagWinner(gridCellsValues[2]);
+    if(gcv[2] != '?' && gcv[2] == gcv[4] && gcv[4] == gcv[6]){
+        FlagWinner(gcv[2]);
+
     }
-
-
+    if(!winStatus){
+        alert('No one is winner at this time. Continue or start new the game.');
+    }
 }
 
 function FlagWinner(winner){
     debugger;
+    winStatus = true;
     let playerNameField = `.player${winner} input`;
     let winnerControl = document.querySelectorAll(playerNameField)[0];
     let winnerName= winnerControl.value;
     document.getElementsByClassName('gameWinner')[0].textContent = `${winnerName} (${winner}) won `;
+}
+
+function MobileUIChanges(){
+    const width = screen.width;
+    
 }

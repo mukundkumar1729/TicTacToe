@@ -51,3 +51,7 @@ input:focus, textarea:focus, select:focus{
     border-radius: 10px;
     width: 100%;
 }
+
+.firstRow{
+    margin-top: 10px;
+}
