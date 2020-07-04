@@ -9,7 +9,7 @@ function HtmlForTicTacToe(counter){
     const rowColCounter = (counter==undefined) ? gridCounter : counter;
     for(var row = 1; row <= rowColCounter; row++){
         html += '<div class="row">';
-        if(width < 350){
+        if(width < 560){
             html += '<div class="col-1"></div>';
         }
         for(var col = 1; col <= rowColCounter; col++){
