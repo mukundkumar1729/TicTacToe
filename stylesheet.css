@@ -1,0 +1,53 @@
+body{
+    background-color:rgb(285,185,0);
+}
+
+.ticTacToe > .row{
+    margin-top:20px;
+}
+
+input:focus, textarea:focus, select:focus{
+    outline: none;
+}
+
+.player0Label{
+    color:rgb(255,185,0) !important; 
+    background-color:rgb(255, 255, 255);
+    border-radius: 10px;
+    text-align: center;
+}
+
+.playerXLabel{
+    color:rgb(0,185,0) !important; 
+    background-color:rgb(255, 255, 255);
+    border-radius: 10px;
+    text-align: center;
+}
+.player0{
+    background-color: rgb(255, 255, 255);
+    width: 100%; 
+    border-radius: 10px;
+}
+
+.playerX{
+    background-color: rgb(255, 255, 255);
+    width: 100%;
+    border-radius: 10px;
+}
+
+.player0 input{
+    color:rgb(255,185,0) !important; 
+    border: none;
+    text-align: center;
+}
+
+.playerX input{
+    color:rgb(0,185,0) !important; 
+    border: none;
+    text-align: center;
+}
+
+.gameWinner{
+    border-radius: 10px;
+    width: 100%;
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="keywords" content="tic tac toe, sudoku, brainrain, brain game, mind game, numbers game">
+    <title>BrainRain Game</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+    <link type="text/css" rel="stylesheet" href="stylesheet.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="row">
+        <div class="col-md-4"></div>
+        <div class="col-md-1 col-3">
+            <h4>Play</h4>
+        </div>
+        <div class="col-md-2 col-6">
+            <select class="form-control">
+                <option>Tic Tac Toe</option>
+                <option>Sudoku</option>
+            </select>
+        </div>
+        <div class="col-md-1 col-3">
+            <a href="" class="btn btn-primary">New</a>
+        </div>
+    </div>
+    <div class="row ticTacToe spa">
+        <div class="col-md-4"></div>
+        <div class="col-md-4 col-12">
+            <div class="row">
+                <div class="col-md-6 col-6 player0Label" >
+                    <label>0</label>
+                </div>
+                <div class="col-md-6 col-6 playerXLabel">
+                    <label>X</label>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6 col-6 player0" >
+                    <input type="text" class="form-control " />
+                </div>
+                <div class="col-md-6 col-6 playerX">
+                    <input type="text" class="form-control " />
+                </div>
+            </div>
+            <div id="ticTacToeGrid">
+                
+            </div>
+            <div class="row">
+                <div class="col-md-4 col-12"><button type="button" onclick="CheckWinner();" class="btn btn-primary" width="100%">Check Winner</button></div>
+                <div class="col-md-6 col-12"><label class="form-control gameWinner">Winner : </label></div>
+
+            </div>
+        </div>
+    </div>
+    <div class="script">
+        <script type="text/javascript" src="src/jsFunctions.js"></script>
+    </div>
+</body>
+</html>
