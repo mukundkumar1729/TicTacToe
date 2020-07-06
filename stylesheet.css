@@ -15,6 +15,7 @@ input:focus, textarea:focus, select:focus{
     background-color:rgb(255, 255, 255);
     border-radius: 10px;
     text-align: center;
+    font-size: 24px;
 }
 
 .playerXLabel{
@@ -22,6 +23,7 @@ input:focus, textarea:focus, select:focus{
     background-color:rgb(255, 255, 255);
     border-radius: 10px;
     text-align: center;
+    font-size: 24px;
 }
 .player0{
     background-color: rgb(255, 255, 255);
@@ -33,12 +35,12 @@ input:focus, textarea:focus, select:focus{
     background-color: rgb(255, 255, 255);
     width: 100%;
     border-radius: 10px;
+    font-size: 24px;
 }
 
 .player0 input{
     color:rgb(255,185,0) !important; 
     border: none;
-    text-align: center;
 }
 
 .playerX input{
@@ -54,4 +56,26 @@ input:focus, textarea:focus, select:focus{
 
 .firstRow{
     margin-top: 10px;
+    margin-bottom: 10px;
 }
+
+table{
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.gridCell{
+     border:dotted;
+     border-radius: 10px;
+     margin-top: 10px;
+     margin-bottom: 10px;
+     width:150px;
+     height:100px;
+     text-align: center;
+     font-size:48px;;
+    }
+
+
+.newGame{
+text-align: right;
+    }

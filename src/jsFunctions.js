@@ -7,18 +7,20 @@ function HtmlForTicTacToe(counter){
     let html = "";
     const width = screen.width;
     const rowColCounter = (counter==undefined) ? gridCounter : counter;
+    html += '<div class="row"><div class="col-md-12 col-12"><table>';
     for(var row = 1; row <= rowColCounter; row++){
-        html += '<div class="row">';
+        html += '<tr>';
         if(width < 560){
-            html += '<div class="col-1"></div>';
+            html += '<td style="width:25px"></td>';
         }
         for(var col = 1; col <= rowColCounter; col++){
-            html += `<div class="col-md-4 col-3" onclick='SelectGridCell(${row},${col})' style="border:dotted;border-radius: 10px;margin-top: 10px;margin-bottom: 10px;">
+            html += `<td onclick='SelectGridCell(${row},${col})' class="gridCell">
                             <label id= 'lbl${row}${col}'>?</label>
-                        </div>`;
+                        </td>`;
         }
-        html+= '</div>';
+        html+= '</tr>';
     }
+    html += '</table></div></div>';
     document.getElementById('ticTacToeGrid').innerHTML = html;
 }
 
@@ -88,9 +90,4 @@ function FlagWinner(winner){
     let winnerControl = document.querySelectorAll(playerNameField)[0];
     let winnerName= winnerControl.value;
     document.getElementsByClassName('gameWinner')[0].textContent = `${winnerName} (${winner}) won `;
-}
-
-function MobileUIChanges(){
-    const width = screen.width;
-    
 }
