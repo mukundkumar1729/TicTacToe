@@ -1,6 +1,10 @@
 let user = '0';
 const gridCounter = 3;
 let winStatus = false;
+const constant = {
+    page : "tictactoe"
+}
+
 HtmlForTicTacToe();
 
 function HtmlForTicTacToe(counter){
@@ -52,7 +56,6 @@ function CheckWinner(){
             gridCellsValues.push(cellVal);
     }
     let gcv = gridCellsValues;
-    debugger;
     // Checking horizontal row first
     for(let i = 1 ; i <= gridCounter; i++){
     let gcv = gridCellsValues;
@@ -61,7 +64,6 @@ function CheckWinner(){
        }
 }
 
-debugger;
     // Checking vertical rows
     for(let j = 1 ; j <= (gridCounter * gridCounter); j= j+gridCounter){
         if(gcv[j-1] != '?' && gcv[j-1] == gcv[j] && gcv[j] == gcv[j+1]){
@@ -69,7 +71,6 @@ debugger;
     }
 }
 
-debugger;
     //Checking diagonally
     if(gcv[0] != '?' && gcv[0] == gcv[4] && gcv[4] == gcv[8]){
         FlagWinner(gcv[0]);
@@ -84,7 +85,6 @@ debugger;
 }
 
 function FlagWinner(winner){
-    debugger;
     winStatus = true;
     let playerNameField = `.player${winner} input`;
     let winnerControl = document.querySelectorAll(playerNameField)[0];
