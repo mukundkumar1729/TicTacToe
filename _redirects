@@ -1,0 +1,5 @@
+
+# All requests from the https://gordian1729-tictactoe.netlify.app/ will be permanently redirected
+# to the https://tictactoe.gordian1729.in, preserving the path.
+
+https://gordian1729-tictactoe.netlify.app/* https://tictactoe.gordian1729.in/:splat 301!
