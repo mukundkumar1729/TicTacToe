@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Tic-Tac-Toe</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, query, runTransaction, getDoc, getDocs, where, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Set Firebase log level for debugging
+        setLogLevel('debug');
+
+        // Global variables for Firebase access
+        window.initializeApp = initializeApp;
+        window.getAuth = getAuth;
+        window.signInAnonymously = signInAnonymously;
+        window.signInWithCustomToken = signInWithCustomToken;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.getFirestore = getFirestore;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.onSnapshot = onSnapshot;
+        window.collection = collection;
+        window.query = query;
+        window.runTransaction = runTransaction;
+        window.getDoc = getDoc;
+        window.getDocs = getDocs;
+        window.where = where;
+        window.deleteDoc = deleteDoc;
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f8fc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            color: #1f2937;
+        }
+        /* Tic-Tac-Toe Grid Styling */
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            width: 95%;
+            max-width: 400px;
+            aspect-ratio: 1 / 1;
+            padding: 16px;
+            background-color: #6366f1; /* Indigo background for the board */
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            font-weight: 700;
+            background-color: #e0e7ff; /* Light indigo tile */
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #1f2937;
+        }
+
+        .cell:not(.filled):hover {
+            background-color: #c7d2fe;
+            transform: scale(1.03);
+        }
+
+        .cell.filled {
+            cursor: default;
+        }
+        
+        .cell.winner {
+            background-color: #10b981 !important; /* Green for win */
+            color: white;
+        }
+
+        .cell.x-color { color: #f59e0b; } /* Amber for X */
+        .cell.o-color { color: #ef4444; } /* Red for O */
+        
+        /* Status Box */
+        #status-display {
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <h1 class="text-3xl font-extrabold text-indigo-700 mb-6">Online Tic-Tac-Toe</h1>
+
+    <div id="game-status" class="w-full max-w-sm mb-4">
+        <div id="status-display" class="text-xl font-bold text-center p-3 rounded-lg shadow-md mb-3 bg-white">
+            Initializing...
+        </div>
+        <p id="player-info" class="text-sm text-gray-600 text-center break-all">User ID: Loading...</p>
+        <p id="game-info" class="text-sm text-gray-600 text-center break-all mt-1">Game ID: <span id="game-id-display">tictactoe-main</span></p>
+    </div>
+
+    <!-- Game Board -->
+    <div id="game-board" class="mb-6">
+        <!-- Cells populated by JS -->
+    </div>
+
+    <!-- Controls -->
+    <div class="flex space-x-4">
+        <button id="reset-btn" class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg transition transform hover:scale-105" disabled>Start New Game</button>
+        <button id="delete-btn" class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg transition transform hover:scale-105" disabled>Delete Game</button>
+    </div>
+
+<script type="module">
+    // Re-import symbols available globally from the <script type="module"> block above
+    const { 
+        initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
+        getFirestore, doc, setDoc, onSnapshot, collection, runTransaction, getDoc, where, query, getDocs, deleteDoc
+    } = window;
+
+    // --- Firebase Global Setup ---
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    
+    // Fixed public game ID for easy two-player connection
+    const GAME_ID = 'tictactoe-main';
+    const GAME_COLLECTION_PATH = `/artifacts/${appId}/public/data/tictactoe_games`;
+    const gameDocRef = doc(db, GAME_COLLECTION_PATH, GAME_ID);
+
+    // --- Game State Variables ---
+    let localUserId = 'guest';
+    let localPlayer = null; // 'X' or 'O'
+    let unsubscribe = null; // To hold the onSnapshot listener
+
+    // Board state from Firestore
+    let gameData = {
+        board: Array(9).fill(null),
+        currentPlayer: 'X',
+        status: 'WAITING', // WAITING, IN_PROGRESS, X_WINS, O_WINS, DRAW
+        playerXId: null,
+        playerOId: null,
+        winnerCells: []
+    };
+    
+    const WINNING_COMBOS = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+        [0, 4, 8], [2, 4, 6]            // Diagonals
+    ];
+
+    // --- DOM Elements ---
+    const gameBoardEl = document.getElementById('game-board');
+    const statusDisplayEl = document.getElementById('status-display');
+    const playerInfoEl = document.getElementById('player-info');
+    const resetBtn = document.getElementById('reset-btn');
+    const deleteBtn = document.getElementById('delete-btn');
+    const gameIdDisplay = document.getElementById('game-id-display');
+    
+    // --- Core Logic ---
+
+    /**
+     * Checks for a win condition based on the current board state.
+     * @returns {{winner: string|null, cells: number[]}}
+     */
+    function checkWin(board) {
+        for (const combo of WINNING_COMBOS) {
+            const [a, b, c] = combo;
+            if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                return { winner: board[a], cells: combo };
+            }
+        }
+        return { winner: null, cells: [] };
+    }
+
+    /**
+     * Checks for a draw (board full, no winner).
+     */
+    function checkDraw(board) {
+        return !checkWin(board).winner && board.every(cell => cell !== null);
+    }
+    
+    /**
+     * Updates the UI based on the latest gameData from Firestore.
+     */
+    function renderGame() {
+        // 1. Render Board
+        gameBoardEl.innerHTML = '';
+        gameData.board.forEach((mark, index) => {
+            const cell = document.createElement('div');
+            cell.className = `cell ${mark ? 'filled' : ''} ${mark === 'X' ? 'x-color' : mark === 'O' ? 'o-color' : ''} shadow-md`;
+            cell.textContent = mark || '';
+            cell.dataset.index = index;
+            cell.addEventListener('click', () => handleMove(index));
+            
+            // Highlight winner cells
+            if (gameData.winnerCells.includes(index)) {
+                cell.classList.add('winner');
+            }
+
+            gameBoardEl.appendChild(cell);
+        });
+
+        // 2. Render Status
+        let statusText = '';
+        let statusClass = 'bg-white text-gray-800';
+        resetBtn.disabled = true;
+        deleteBtn.disabled = false;
+
+        if (gameData.status === 'WAITING') {
+            statusText = gameData.playerXId === localUserId ? 
+                'Waiting for Player O to join...' : 'Game waiting for you to join as O!';
+            statusClass = 'bg-yellow-100 text-yellow-700';
+            resetBtn.disabled = true;
+        } else if (gameData.status === 'IN_PROGRESS') {
+            statusText = `Turn: ${gameData.currentPlayer} (${gameData.currentPlayer === localPlayer ? 'YOUR TURN' : 'THEIR TURN'})`;
+            statusClass = gameData.currentPlayer === localPlayer ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-700';
+        } else if (gameData.status === 'X_WINS' || gameData.status === 'O_WINS') {
+            const winner = gameData.status.startsWith('X') ? 'X' : 'O';
+            statusText = `${winner} Wins!`;
+            statusClass = 'bg-green-100 text-green-700';
+            resetBtn.disabled = false;
+        } else if (gameData.status === 'DRAW') {
+            statusText = 'Game Draw!';
+            statusClass = 'bg-gray-300 text-gray-800';
+            resetBtn.disabled = false;
+        }
+        
+        statusDisplayEl.textContent = statusText;
+        statusDisplayEl.className = `text-xl font-bold text-center p-3 rounded-lg shadow-md mb-3 ${statusClass}`;
+        
+        // 3. Render Player Info
+        let role = '';
+        if (gameData.playerXId === localUserId) {
+            role = ' (Player X)';
+        } else if (gameData.playerOId === localUserId) {
+            role = ' (Player O)';
+        }
+        localPlayer = role.includes('X') ? 'X' : role.includes('O') ? 'O' : null;
+        
+        playerInfoEl.innerHTML = `Your ID: <span class="font-mono text-xs text-indigo-700">${localUserId}</span>${role}`;
+    }
+
+    /**
+     * Attempts to join or create the game document.
+     */
+    async function setupGameDocument() {
+        console.log("Setting up game document...");
+        try {
+            await runTransaction(db, async (transaction) => {
+                const gameDoc = await transaction.get(gameDocRef);
+                
+                if (!gameDoc.exists()) {
+                    // 1. CREATE NEW GAME (First player becomes X)
+                    console.log("Creating new game.");
+                    const newGame = {
+                        board: Array(9).fill(null),
+                        currentPlayer: 'X',
+                        status: 'WAITING',
+                        playerXId: localUserId,
+                        playerOId: null,
+                        winnerCells: [],
+                        lastMove: Date.now()
+                    };
+                    transaction.set(gameDocRef, newGame);
+                    gameData = newGame;
+                    localPlayer = 'X';
+
+                } else {
+                    let existingData = gameDoc.data();
+                    
+                    // 2. JOIN EXISTING GAME
+                    if (existingData.playerXId === localUserId) {
+                        // Rejoining as X
+                        localPlayer = 'X';
+                    } else if (existingData.playerOId === localUserId) {
+                        // Rejoining as O
+                        localPlayer = 'O';
+                    } else if (!existingData.playerOId && existingData.playerXId !== localUserId) {
+                        // Joining as O for the first time
+                        console.log("Joining game as Player O.");
+                        existingData.playerOId = localUserId;
+                        existingData.status = 'IN_PROGRESS';
+                        transaction.update(gameDocRef, {
+                            playerOId: localUserId,
+                            status: 'IN_PROGRESS'
+                        });
+                        localPlayer = 'O';
+                    } else {
+                        // Full game, just spectate/observe
+                        console.log("Game is full. Observing.");
+                        localPlayer = null;
+                    }
+                    gameData = existingData;
+                }
+            });
+
+            // Start real-time listener after setup
+            startRealtimeListener();
+
+        } catch (e) {
+            console.error("Transaction failed: ", e);
+            statusDisplayEl.textContent = "Error setting up game.";
+        }
+    }
+
+    /**
+     * Listens to real-time updates from Firestore.
+     */
+    function startRealtimeListener() {
+        if (unsubscribe) {
+            unsubscribe(); // Clean up previous listener
+        }
+        
+        unsubscribe = onSnapshot(gameDocRef, (doc) => {
+            if (doc.exists()) {
+                gameData = doc.data();
+                renderGame();
+            } else {
+                // Document deleted (game reset)
+                gameData = {
+                    board: Array(9).fill(null),
+                    currentPlayer: 'X',
+                    status: 'WAITING',
+                    playerXId: null,
+                    playerOId: null,
+                    winnerCells: []
+                };
+                // Re-run setup to potentially recreate/join the game
+                setupGameDocument(); 
+            }
+        }, (error) => {
+            console.error("Firestore listener error:", error);
+            statusDisplayEl.textContent = "Lost connection to game!";
+        });
+    }
+
+    /**
+     * Handles a click on a game cell.
+     * @param {number} index - Index of the cell clicked (0-8).
+     */
+    async function handleMove(index) {
+        if (gameData.status !== 'IN_PROGRESS' || gameData.board[index] !== null) {
+            return;
+        }
+
+        if (gameData.currentPlayer !== localPlayer) {
+            showMessage("It's not your turn!", false);
+            return;
+        }
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const docSnap = await transaction.get(gameDocRef);
+                if (!docSnap.exists() || docSnap.data().status !== 'IN_PROGRESS' || docSnap.data().currentPlayer !== localPlayer) {
+                    // Check again inside transaction to prevent race conditions
+                    throw "Invalid move or not your turn.";
+                }
+
+                let newBoard = [...docSnap.data().board];
+                newBoard[index] = localPlayer;
+                
+                const winResult = checkWin(newBoard);
+                let newStatus = 'IN_PROGRESS';
+                let nextPlayer = localPlayer === 'X' ? 'O' : 'X';
+                let winnerCells = [];
+
+                if (winResult.winner) {
+                    newStatus = `${winResult.winner}_WINS`;
+                    nextPlayer = null; // Game over
+                    winnerCells = winResult.cells;
+                    showMessage(`${winResult.winner} wins!`, true);
+                } else if (checkDraw(newBoard)) {
+                    newStatus = 'DRAW';
+                    nextPlayer = null;
+                    showMessage('Game Draw!', false);
+                }
+
+                transaction.update(gameDocRef, {
+                    board: newBoard,
+                    currentPlayer: nextPlayer,
+                    status: newStatus,
+                    winnerCells: winnerCells,
+                    lastMove: Date.now()
+                });
+            });
+        } catch (e) {
+            console.error("Move failed:", e);
+            showMessage("Move failed. Check connectivity.", false);
+        }
+    }
+
+    /**
+     * Resets the board for a new game, keeping the current players.
+     */
+    async function resetGame() {
+        if (!gameData.playerXId || !gameData.playerOId) {
+             showMessage("Waiting for both players to join first.", false);
+             return;
+        }
+        
+        if (localPlayer !== 'X' && localPlayer !== 'O') {
+            showMessage("Only players X or O can start a new game.", false);
+            return;
+        }
+
+        const newGameData = {
+            board: Array(9).fill(null),
+            currentPlayer: 'X',
+            status: 'IN_PROGRESS',
+            playerXId: gameData.playerXId,
+            playerOId: gameData.playerOId,
+            winnerCells: [],
+            lastMove: Date.now()
+        };
+        try {
+            await setDoc(gameDocRef, newGameData);
+            showMessage("Game reset! X starts.", true);
+        } catch (e) {
+            console.error("Reset failed:", e);
+            showMessage("Failed to reset game.", false);
+        }
+    }
+    
+    /**
+     * Deletes the game document entirely.
+     */
+    async function deleteGame() {
+        if (localPlayer !== 'X' && localPlayer !== 'O') {
+            showMessage("Only players X or O can delete the game.", false);
+            return;
+        }
+        try {
+            if (unsubscribe) unsubscribe(); // Stop listener first
+            await deleteDoc(gameDocRef);
+            showMessage("Game deleted. Start a new one to become Player X.", true);
+            // The listener will re-run setupGameDocument() and recreate the game as WAITING
+        } catch (e) {
+            console.error("Delete failed:", e);
+            showMessage("Failed to delete game.", false);
+        }
+    }
+
+    /**
+     * Initializes authentication and starts the game setup.
+     */
+    async function initialize() {
+        document.getElementById('game-id-display').textContent = GAME_ID;
+        
+        try {
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            
+            if (initialAuthToken) {
+                await signInWithCustomToken(auth, initialAuthToken);
+            } else {
+                await signInAnonymously(auth);
+            }
+            
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    localUserId = user.uid;
+                    setupGameDocument();
+                } else {
+                    localUserId = crypto.randomUUID(); // Fallback ID
+                    playerInfoEl.textContent = `User ID: ${localUserId} (Unauthenticated)`;
+                }
+            });
+
+        } catch (error) {
+            console.error("Firebase Auth Error:", error);
+            statusDisplayEl.textContent = "Auth failed. Cannot play online.";
+        }
+        
+        resetBtn.addEventListener('click', resetGame);
+        deleteBtn.addEventListener('click', deleteGame);
+    }
+
+    // --- Start Application ---
+    window.onload = initialize;
+
+    function showMessage(text, isSuccess = false) {
+        const tempMsgBox = document.createElement('div');
+        tempMsgBox.textContent = text;
+        tempMsgBox.className = `fixed top-1/4 left-1/2 transform -translate-x-1/2 p-3 rounded-lg shadow-xl text-white font-semibold transition-opacity duration-300 z-50 ${isSuccess ? 'bg-green-600' : 'bg-red-600'}`;
+        document.body.appendChild(tempMsgBox);
+
+        setTimeout(() => {
+            tempMsgBox.style.opacity = '0';
+            tempMsgBox.addEventListener('transitionend', () => tempMsgBox.remove());
+        }, 3000);
+    }
+</script>
+</body>
+</html>
